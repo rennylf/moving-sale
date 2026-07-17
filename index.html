@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="format-detection" content="telephone=no" />
+<title>搬家清仓 · 家居好物转让</title>
+<style>
+  :root{
+    --bg:#f7f6f3; --card:#ffffff; --ink:#2b2b2b; --muted:#8a8a8a;
+    --line:#ececec; --accent:#c8794f; --free:#3f9d6d; --shadow:0 2px 14px rgba(0,0,0,.06);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,sans-serif;
+    line-height:1.6}
+  a{color:inherit}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 18px}
+
+  /* Header */
+  header{background:linear-gradient(160deg,#fbf3ec,#f7f6f3);padding:44px 0 30px;border-bottom:1px solid var(--line)}
+  header h1{margin:0 0 8px;font-size:26px;letter-spacing:.5px}
+  header p{margin:0;color:var(--muted);font-size:15px;max-width:640px}
+  .meta{margin-top:16px;display:flex;flex-wrap:wrap;gap:10px 20px;font-size:13px;color:#666}
+  .meta span{display:inline-flex;align-items:center;gap:6px}
+
+  /* Toolbar */
+  .toolbar{position:sticky;top:0;z-index:20;background:rgba(247,246,243,.92);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:12px 0}
+  .toolbar .wrap{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .filters{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 15px;
+    font-size:14px;cursor:pointer;transition:.15s;color:#555}
+  .chip:hover{border-color:var(--accent);color:var(--accent)}
+  .chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .count{margin-left:auto;font-size:13px;color:var(--muted)}
+
+  /* Grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;padding:26px 0 50px}
+  .card{background:var(--card);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);
+    display:flex;flex-direction:column;transition:.18s}
+  .card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.1)}
+  .card.sold{opacity:.62}
+  .thumb{position:relative;aspect-ratio:4/3;background:#eee;cursor:pointer;overflow:hidden}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .badge{position:absolute;top:10px;left:10px;font-size:12px;padding:3px 10px;border-radius:999px;
+    color:#fff;font-weight:500}
+  .badge.paid{background:var(--accent)}
+  .badge.free{background:var(--free)}
+  .status{position:absolute;top:10px;right:10px;font-size:12px;padding:3px 9px;border-radius:6px;
+    background:rgba(0,0,0,.55);color:#fff}
+  .status.reserved{background:rgba(200,121,79,.9)}
+  .status.sold{background:rgba(60,60,60,.85)}
+  .body{padding:13px 14px 15px;display:flex;flex-direction:column;flex:1}
+  .name{font-size:15px;font-weight:600;margin:0 0 4px}
+  .cond{font-size:12px;color:var(--muted);margin:0 0 8px}
+  .desc{font-size:13px;color:#5a5a5a;margin:0 0 12px;flex:1}
+  .price{font-size:18px;font-weight:700;color:var(--accent)}
+  .price.free{color:var(--free)}
+  .cat{display:inline-block;font-size:11px;color:#999;border:1px solid var(--line);
+    border-radius:5px;padding:1px 7px;margin-left:8px;vertical-align:middle}
+
+  /* Contact */
+  .contact{background:#fff;border-top:1px solid var(--line);padding:40px 0 60px}
+  .contact .wrap{display:flex;gap:34px;flex-wrap:wrap;align-items:center;justify-content:center;text-align:center}
+  .qr{width:180px;height:180px;border-radius:12px;border:1px solid var(--line);
+    object-fit:cover;background:#fafafa}
+  .contact h3{margin:0 0 8px;font-size:20px}
+  .wxid{font-size:16px;color:var(--accent);font-weight:600;
+    background:#fbf1ea;padding:8px 16px;border-radius:8px;display:inline-block;margin:6px 0}
+  .contact p{color:var(--muted);font-size:14px;margin:6px 0;max-width:420px}
+  footer{text-align:center;color:#bbb;font-size:12px;padding:22px 0 30px}
+
+  /* Lightbox */
+  .lb{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;
+    align-items:center;justify-content:center;z-index:100}
+  .lb.open{display:flex}
+  .lb img{max-width:92vw;max-height:88vh;border-radius:8px}
+  .lb .close{position:absolute;top:18px;right:24px;color:#fff;font-size:34px;cursor:pointer;line-height:1}
+
+  @media(max-width:520px){
+    header h1{font-size:22px}
+    .grid{grid-template-columns:repeat(2,1fr);gap:12px}
+    .name{font-size:14px}
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1 id="title"></h1>
+      <p id="subtitle"></p>
+      <div class="meta">
+        <span>📍 <span id="location"></span></span>
+        <span>🕑 <span id="pickupTime"></span></span>
+      </div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="wrap">
+      <div class="filters" id="filters"></div>
+      <div class="count" id="count"></div>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <div class="grid" id="grid"></div>
+  </main>
+
+  <section class="contact">
+    <div class="wrap">
+      <img class="qr" id="qr" alt="微信二维码" />
+      <div>
+        <h3>想要哪件？加我微信 👇</h3>
+        <div class="wxid">微信号：<span id="wechat"></span></div>
+        <p id="note"></p>
+      </div>
+    </div>
+  </section>
+
+  <footer>因跨省搬家整理 · 诚意转让 · 感谢你的浏览</footer>
+
+  <div class="lb" id="lb"><span class="close" id="lbClose">&times;</span><img id="lbImg" /></div>
+
+  <script src="data.js"></script>
+  <script>
+    // 图片占位（无图或加载失败时显示）
+    const PLACEHOLDER = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="#eee"/><text x="50%" y="50%" font-size="20" fill="#bbb" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif">待补充照片</text></svg>');
+
+    // 填充全局信息
+    document.title = CONFIG.title;
+    document.getElementById('title').textContent = CONFIG.title;
+    document.getElementById('subtitle').textContent = CONFIG.subtitle;
+    document.getElementById('location').textContent = CONFIG.location;
+    document.getElementById('pickupTime').textContent = CONFIG.pickupTime;
+    document.getElementById('wechat').textContent = CONFIG.wechat;
+    document.getElementById('note').textContent = CONFIG.note;
+    const qr = document.getElementById('qr');
+    qr.src = CONFIG.wechatQr;
+    qr.onerror = () => { qr.src = PLACEHOLDER; };
+
+    const STATUS = { available:'', reserved:'已预订', sold:'已送出/已售' };
+    let currentFilter = 'all';
+
+    function priceLabel(it){
+      if (it.priceText) return it.priceText;
+      return it.price === 0 ? '免费' : '¥' + it.price;
+    }
+
+    function render(){
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+      const list = ITEMS.filter(it => {
+        if (currentFilter === 'free') return it.price === 0;
+        if (currentFilter === 'paid') return it.price > 0;
+        return true;
+      });
+      list.forEach(it => {
+        const free = it.price === 0;
+        const img = (it.images && it.images[0]) ? it.images[0] : PLACEHOLDER;
+        const card = document.createElement('div');
+        card.className = 'card' + (it.status==='sold' ? ' sold':'');
+        card.innerHTML = `
+          <div class="thumb">
+            <img src="${img}" alt="${it.name}" loading="lazy"
+                 onerror="this.src='${PLACEHOLDER}'">
+            <span class="badge ${free?'free':'paid'}">${free?'免费送':'有偿'}</span>
+            ${it.status!=='available' ? `<span class="status ${it.status}">${STATUS[it.status]}</span>`:''}
+          </div>
+          <div class="body">
+            <p class="name">${it.name}<span class="cat">${it.category}</span></p>
+            <p class="cond">${it.condition||''}</p>
+            <p class="desc">${it.desc||''}</p>
+            <div class="price ${free?'free':''}">${priceLabel(it)}</div>
+          </div>`;
+        card.querySelector('.thumb').addEventListener('click', ()=>openLB(img));
+        grid.appendChild(card);
+      });
+      document.getElementById('count').textContent = `共 ${list.length} 件`;
+    }
+
+    // 筛选按钮
+    const filters = [
+      {key:'all', label:'全部'},
+      {key:'paid', label:'有偿转让'},
+      {key:'free', label:'免费赠送'}
+    ];
+    const fbox = document.getElementById('filters');
+    filters.forEach((f,i)=>{
+      const b = document.createElement('button');
+      b.className = 'chip' + (i===0?' active':'');
+      b.textContent = f.label;
+      b.onclick = ()=>{
+        currentFilter = f.key;
+        [...fbox.children].forEach(c=>c.classList.remove('active'));
+        b.classList.add('active');
+        render();
+      };
+      fbox.appendChild(b);
+    });
+
+    // 大图
+    const lb = document.getElementById('lb');
+    function openLB(src){ document.getElementById('lbImg').src = src; lb.classList.add('open'); }
+    lb.addEventListener('click', ()=>lb.classList.remove('open'));
+
+    render();
+  </script>
+</body>
+</html>
