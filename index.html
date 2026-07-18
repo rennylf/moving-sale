@@ -35,6 +35,12 @@
   .chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
   .count{margin-left:auto;font-size:13px;color:var(--muted)}
 
+  /* Purchase note banner */
+  .notice{margin:18px 0 0;background:#fff;border:1px solid #f1e4d6;
+    border-left:4px solid var(--accent);border-radius:8px;
+    padding:12px 16px;font-size:14px;color:#5a5a5a;line-height:1.7}
+  .notice b{color:var(--accent)}
+
   /* Grid */
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;padding:26px 0 50px}
   .card{background:var(--card);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);
@@ -52,8 +58,7 @@
   .status.reserved{background:rgba(200,121,79,.9)}
   .status.sold{background:rgba(60,60,60,.85)}
   .body{padding:13px 14px 15px;display:flex;flex-direction:column;flex:1}
-  .name{font-size:15px;font-weight:600;margin:0 0 4px}
-  .cond{font-size:12px;color:var(--muted);margin:0 0 8px}
+  .name{font-size:15px;font-weight:600;margin:0 0 8px}
   .desc{font-size:13px;color:#5a5a5a;margin:0 0 12px;flex:1}
   .price{font-size:18px;font-weight:700;color:var(--accent)}
   .price.free{color:var(--free)}
@@ -105,6 +110,7 @@
   </div>
 
   <main class="wrap">
+    <div class="notice" id="notice"></div>
     <div class="grid" id="grid"></div>
   </main>
 
@@ -137,6 +143,7 @@
     document.getElementById('pickupTime').textContent = CONFIG.pickupTime;
     document.getElementById('wechat').textContent = CONFIG.wechat;
     document.getElementById('note').textContent = CONFIG.note;
+    document.getElementById('notice').textContent = CONFIG.purchaseNote;
     const qr = document.getElementById('qr');
     qr.src = CONFIG.wechatQr;
     qr.onerror = () => { qr.src = PLACEHOLDER; };
@@ -171,7 +178,6 @@
           </div>
           <div class="body">
             <p class="name">${it.name}<span class="cat">${it.category}</span></p>
-            <p class="cond">${it.condition||''}</p>
             <p class="desc">${it.desc||''}</p>
             <div class="price ${free?'free':''}">${priceLabel(it)}</div>
           </div>`;

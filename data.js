@@ -4,48 +4,96 @@
 
 // —— 全局信息 —— //
 const CONFIG = {
-  title: "搬家清仓 · 家居好物转让",
-  subtitle: "因跨省工作调动，家中好物低价转让 / 免费赠送，诚意出，先到先得",
-  wechat: "your_wechat_id",              // ← 改成你的微信号
-  wechatQr: "images/wechat-qr.png",      // ← 把你的微信二维码图片放到 images/ 文件夹，命名 wechat-qr.png
-  location: "XX 市 XX 区 XX 小区（自提）", // ← 改成你的大致取货范围
-  pickupTime: "工作日晚上 / 周末全天",     // ← 方便看货取货的时间
-  note: "所有物品支持当面验货；大件家具需自提，我可协助搬到楼下。免费物品先到先得，恕不预留。"
+  title: "搬家清仓 · 寝室好物转让",
+  subtitle: "因跨省工作调动，2024 年 9 月后陆续购置的寝室好物低价转让 / 免费赠送",
+  purchaseNote: "📦 所有物品均为 2024 年 9 月以后搬入寝室置办，使用时长最长不超过 2 年，物品均为正常使用，无明显损坏。",
+  wechat: "your_wechat_id",                 // ← 改成你的微信号
+  wechatQr: "images/wechat-qr.png",         // ← 微信二维码命名 wechat-qr.png 放进 images/
+  location: "XX 市 XX 区 XX 小区（自提）",   // ← 改成你的大致取货范围
+  pickupTime: "工作日晚上 / 周末全天",        // ← 方便看货取货的时间
+  note: "所有物品支持当面验货；大件支持协助搬下楼。免费物品先到先得，恕不预留。"
 };
 
 // —— 物品列表 —— //
 // 字段说明：
 //   name      物品名称
-//   category  类别（家具 / 家电 / 厨房 / 收纳 / 数码 / 其他）
-//   price     价格数字；填 0 表示免费赠送
-//   priceText 可选，覆盖价格显示文字，比如 "面议" "10 元/个"
-//   condition 新旧程度，比如 "9 成新，使用 1 年"
-//   desc      详细描述（尺寸、瑕疵等）
-//   images    图片路径数组，放到 images/ 文件夹里；留空会显示占位图
+//   category  类别（家具 / 家电 / 厨房 / 数码 / 健身 / 个护 / 其他）
+//   price     价格数字；填 0 或 "免费" 表示免费赠送
+//   priceText 可选，覆盖价格显示文字
+//   desc      详细描述（尺寸/瑕疵/亮点）
+//   images    图片路径数组；留空显示占位图
 //   status    available=在售  reserved=已预订  sold=已送出/已售
 const ITEMS = [
-  { name: "宜家 KLIPPAN 双人布艺沙发", category: "家具", price: 300, condition: "9 成新，使用 1.5 年", desc: "米灰色，可拆洗沙发套。长 180cm，无破损，猫抓痕迹极少。", images: ["images/sofa.jpg"], status: "available" },
-  { name: "实木餐桌 + 4 把椅子", category: "家具", price: 450, condition: "8 成新", desc: "橡木色，桌面 120×70cm。有轻微使用痕迹，结构稳固。", images: [], status: "available" },
-  { name: "双门冰箱 210L", category: "家电", price: 500, condition: "7 成新，使用 3 年", desc: "海尔，制冷正常，能效标识齐全。搬家前一直在用。", images: [], status: "available" },
-  { name: "滚筒洗衣机 8kg", category: "家电", price: 600, condition: "8 成新", desc: "小天鹅变频，带烘干。无故障，附原装进水管。", images: [], status: "reserved" },
-  { name: "1.5 匹壁挂空调", category: "家电", price: 700, priceText: "700（含拆机）", condition: "7 成新", desc: "格力，制冷制热正常。价格含师傅上门拆机。", images: [], status: "available" },
-  { name: "IKEA 书桌 + 办公椅", category: "家具", price: 200, condition: "9 成新", desc: "白色书桌 100×60cm，人体工学椅一把。", images: [], status: "available" },
-  { name: "五斗柜收纳柜", category: "收纳", price: 150, condition: "8 成新", desc: "白色，五层抽屉，滑轨顺畅。", images: [], status: "available" },
-  { name: "全身穿衣镜", category: "家具", price: 80, condition: "9 成新", desc: "落地款，实木边框，无划痕。", images: [], status: "available" },
-  { name: "微波炉 20L", category: "厨房", price: 100, condition: "8 成新", desc: "美的机械旋钮款，加热正常。", images: [], status: "available" },
-  { name: "电饭煲 4L", category: "厨房", price: 60, condition: "8 成新", desc: "苏泊尔，内胆完好，附蒸屉。", images: [], status: "available" },
-  { name: "电水壶", category: "厨房", price: 0, condition: "8 成新", desc: "1.7L 不锈钢，烧水快，免费送。", images: [], status: "available" },
-  { name: "厨房锅具三件套", category: "厨房", price: 80, condition: "7 成新", desc: "炒锅 + 汤锅 + 平底锅，不粘涂层基本完好。", images: [], status: "available" },
-  { name: "餐具 / 碗碟一批", category: "厨房", price: 0, condition: "适用", desc: "碗、盘、杯子若干，打包免费送，需自取。", images: [], status: "available" },
-  { name: "台式护眼灯", category: "数码", price: 40, condition: "9 成新", desc: "可调色温，USB 供电。", images: [], status: "available" },
-  { name: "无线路由器 AX3000", category: "数码", price: 90, condition: "9 成新", desc: "小米，WiFi6，已恢复出厂设置。", images: [], status: "available" },
-  { name: "落地风扇", category: "家电", price: 50, condition: "8 成新", desc: "遥控款，三档风速，静音。", images: [], status: "available" },
-  { name: "取暖器 / 小太阳", category: "家电", price: 40, condition: "8 成新", desc: "冬天备用，发热正常。", images: [], status: "available" },
-  { name: "衣物挂烫机", category: "家电", price: 60, condition: "9 成新", desc: "手持挂烫两用，出汽稳定。", images: [], status: "available" },
-  { name: "折叠晾衣架", category: "收纳", price: 0, condition: "8 成新", desc: "落地双杆款，可折叠，免费送。", images: [], status: "available" },
-  { name: "收纳箱一组（4 个）", category: "收纳", price: 40, priceText: "40（4 个）", condition: "8 成新", desc: "带盖塑料整理箱，适合换季衣物。", images: [], status: "available" },
-  { name: "地毯 1.4×2m", category: "家居", price: 70, condition: "8 成新", desc: "短绒灰色，已清洗。", images: [], status: "sold" },
-  { name: "落地衣帽架", category: "收纳", price: 30, condition: "9 成新", desc: "金属款，稳固不倒。", images: [], status: "available" },
-  { name: "绿植若干（含花盆）", category: "其他", price: 0, condition: "健康", desc: "绿萝、多肉等，带盆免费送，欢迎来领。", images: [], status: "available" },
-  { name: "书籍杂物一批", category: "其他", price: 0, condition: "适用", desc: "小说 / 工具书 / 杂物，打包免费送。", images: [], status: "available" }
+  { name: "一米七的大冰箱", category: "家电", price: 550, condition: "",
+    desc: "美的 180L 双门冰箱，白色，风冷无霜，两门不串味，租房不占地。",
+    images: ["images/fridge.jpg"], status: "available" },
+  { name: "懒人抹布（2 卷）", category: "其他", price: 0, condition: "",
+    desc: "未用完，免费送。",
+    images: ["images/lazy-cloth.jpg"], status: "available" },
+  { name: "大球无绳跳绳", category: "健身", price: 0, condition: "",
+    desc: "成人计数负重减肥，蓝色。",
+    images: ["images/jump-rope.jpg"], status: "available" },
+  { name: "哑铃", category: "健身", price: 0, condition: "",
+    desc: "品健男士家用六角哑铃，包胶，2.5kg。",
+    images: ["images/dumbbell.jpg"], status: "available" },
+  { name: "小爱音箱", category: "数码", price: 60, condition: "",
+    desc: "小米 小爱音箱 Play 增强版，LED 时钟显示，红外遥控，黑色。",
+    images: ["images/xiaomi-speaker.jpg"], status: "available" },
+  { name: "小米体脂秤", category: "数码", price: 45, condition: "",
+    desc: "米家智能体脂秤 S400，白色，双接蓝牙，25 项身体数据，电池供电。",
+    images: ["images/mi-scale.jpg"], status: "available" },
+  { name: "小米路由器", category: "数码", price: 90, condition: "",
+    desc: "小米 AX3000T，千兆双频，穿墙强，5G 智能，一碰连 NFC。",
+    images: ["images/mi-router.jpg"], status: "available" },
+  { name: "床上小桌板", category: "家具", price: 20, condition: "",
+    desc: "可折叠，60×40cm，适合床上学习、追剧、用电脑。",
+    images: ["images/bed-desk.jpg"], status: "available" },
+  { name: "排插一组", category: "数码", price: 60, condition: "",
+    desc: "8 口 1 个 + 4 口 3 个，一次带走一整套。",
+    images: ["images/power-strips.jpg"], status: "available" },
+  { name: "显示器", category: "数码", price: 300, condition: "",
+    desc: "SANC 24 英寸 2K，100Hz，办公娱乐皆可。",
+    images: ["images/monitor.jpg"], status: "available" },
+  { name: "美的电脑显示器挂灯", category: "数码", price: 60, condition: "",
+    desc: "屏幕 LED 护眼挂灯，触控开关，宿舍办公都能用。",
+    images: ["images/monitor-light.jpg"], status: "available" },
+  { name: "欧普台灯", category: "家具", price: 90, condition: "",
+    desc: "Ra97.4 高显色，RG0 无蓝光，可调色温、亮度，告别宿舍大冷光。",
+    images: ["images/desk-lamp.jpg"], status: "available" },
+  { name: "绿联笔记本竖立侧立散热底座", category: "数码", price: 40, condition: "",
+    desc: "铝合金立式支架，可调节，适配 MacBook / 联想 / 华为。",
+    images: ["images/laptop-stand-vertical.jpg"], status: "available" },
+  { name: "米家无雾加湿器 3", category: "家电", price: 150, condition: "",
+    desc: "鼻炎友好，空调房必备。滤芯需自购。",
+    images: ["images/mi-humidifier.jpg"], status: "available" },
+  { name: "米家直流变频塔扇 2", category: "家电", price: 100, condition: "",
+    desc: "无叶落地风扇，自然风，100 挡调节，米家 APP 智能控制。",
+    images: ["images/mi-tower-fan.jpg"], status: "available" },
+  { name: "小米米家洗衣机", category: "家电", price: 450, condition: "",
+    desc: "波轮 10 公斤全自动，超净洗，省水省电，寝室 / 出租房通用。",
+    images: ["images/mi-washer.jpg"], status: "available" },
+  { name: "米家烧水壶", category: "厨房", price: 20, condition: "",
+    desc: "1.5L，304 不锈钢内胆，烧水快。",
+    images: ["images/mi-kettle.jpg"], status: "available" },
+  { name: "米家电饭煲", category: "厨房", price: 0, condition: "",
+    desc: "他人赠予，一人食管够。",
+    images: ["images/mi-cooker.jpg"], status: "available" },
+  { name: "松下（Panasonic）负离子男士夹板", category: "个护", price: 90, condition: "",
+    desc: "直卷两用，刘海短发适用，负离子不伤发、防烫蓬松。",
+    images: ["images/curling-iron.jpg"], status: "available" },
+  { name: "迪卡侬网球拍", category: "健身", price: 100, condition: "",
+    desc: "碳素材质，CSR5，初学者 / 进阶皆适用。",
+    images: ["images/tennis-racket.jpg"], status: "available" },
+  { name: "铁皮床头柜", category: "家具", price: 20, condition: "",
+    desc: "带锁抽屉，0.5mm 铁皮，高 50cm，单门。",
+    images: ["images/bedside-cabinet.jpg"], status: "available" },
+  { name: "铝合金笔记本支架", category: "数码", price: 30, condition: "",
+    desc: "可折叠可升降，散热立式两用，适配联想 / Mac / 戴尔。",
+    images: ["images/laptop-stand-alu.jpg"], status: "available" },
+  { name: "京东京造 Z5 人体工学椅", category: "家具", price: 180, condition: "",
+    desc: "可调节头枕与扶手，腰靠可拆，久坐学习办公皆宜。",
+    images: ["images/chair.jpg"], status: "available" },
+  { name: "京造人体工学腰靠", category: "家具", price: 100, condition: "",
+    desc: "记忆棉材质，可适配办公椅或汽车座椅，固定带可调。",
+    images: ["images/lumbar-pillow.jpg"], status: "available" }
 ];
