@@ -76,6 +76,10 @@ ITEMS = [
 # 微信二维码路径
 QR_PATH = os.path.join(IMG_DIR, "wechat-qr.png")
 
+# V2 输出目录（横排布局）
+OUT_DIR_V2 = os.path.join(os.path.dirname(OUT_DIR), "xiaohongshu_v2")
+os.makedirs(OUT_DIR_V2, exist_ok=True)
+
 # ============================================================
 #  工具函数
 # ============================================================
@@ -353,8 +357,227 @@ def make_item_page(page_num, title, items, hint=""):
     print(f"✓ {page_num:02d}_{title}.jpg")
 
 # ============================================================
-#  Image 9: 联系方式（精简）
+#  V2: 横排布局（每页 2 件，左图右描述）
 # ============================================================
+def font_w(text, font):
+    """不依赖 draw 的文字宽度计算"""
+    bbox = font.getbbox(text)
+    return bbox[2] - bbox[0]
+
+def wrap_text(text, font, max_width):
+    """按宽度自动换行，返回行列表"""
+    lines = []
+    # 先按 · 拆分（中文常见分隔符）
+    parts = text.replace(" · ", "·").split("·")
+    for p in parts:
+        p = p.strip()
+        if not p:
+            continue
+        if font_w(p, font) <= max_width:
+            lines.append(p)
+        else:
+            # 太长就强制拆
+            current = ""
+            for ch in p:
+                if font_w(current + ch, font) <= max_width:
+                    current += ch
+                else:
+                    lines.append(current)
+                    current = ch
+            if current:
+                lines.append(current)
+    return lines
+
+def draw_text_w(draw, text, font):
+    """带 draw 上下文的 text_w 包装"""
+    bbox = draw.textbbox((0,0), text, font=font)
+    return bbox[2] - bbox[0]
+
+def make_item_page_horizontal(page_num, title, items, hint=""):
+    """横排布局：每页 2 件，左图右描述"""
+    canvas = new_canvas()
+    draw = ImageDraw.Draw(canvas)
+
+    # 顶部标题
+    draw_text(draw, (60, 80), title, load_font(SERIF, 48), INK)
+    draw_text(draw, (W-60, 90), f"共 {len(items)} 件", load_font(SANS, 22), MUTED, anchor='ra')
+    draw.line([(60, 145), (W-60, 145)], fill=LINE, width=1)
+
+    # 每页 2 件物品
+    card_h = 580
+    card_w = 960
+    gap_y = 30
+    y0 = 175
+    img_w = 440   # 左侧图片宽
+    desc_x_offset = img_w + 30  # 右侧描述 x 起点
+
+    for idx, item in enumerate(items[:2]):
+        x = 60
+        y = y0 + idx * (card_h + gap_y)
+
+        # 卡片背景
+        rounded_rect(draw, (x, y, x+card_w, y+card_h), 16, fill=CARD, outline=LINE)
+
+        # 左侧图片
+        photo_box = (x+24, y+24, x+24+img_w, y+card_h-24)
+        pw, ph = photo_box[2]-photo_box[0], photo_box[3]-photo_box[1]
+        try:
+            pimg = fit_image(os.path.join(IMG_DIR, item["image"]), (pw, ph))
+            mask = Image.new('L', pimg.size, 0)
+            mdraw = ImageDraw.Draw(mask)
+            mdraw.rounded_rectangle((0, 0, pimg.size[0], pimg.size[1]), 12, fill=255)
+            canvas.paste(pimg, photo_box[:2], mask)
+        except Exception as e:
+            print(f"  图片加载失败 {item['image']}: {e}")
+            rounded_rect(draw, photo_box, 12, fill=LINE)
+
+        # 右侧描述区
+        tx = x + desc_x_offset
+        ty = y + 40
+        desc_max_w = card_w - desc_x_offset - 40
+
+        # 类别标签
+        cat_color = FREE if item["price"] == 0 else ACCENT
+        cat_bg = FREE_SOFT if item["price"] == 0 else ACCENT_SOFT
+        cat_text = item["category"]
+        cat_w = draw_text_w(draw, cat_text, load_font(SANS, 18)) + 32
+        rounded_rect(draw, (tx, ty, tx+cat_w, ty+36), 14, fill=cat_bg)
+        draw_text(draw, (tx+cat_w/2, ty+18), cat_text, load_font(SANS, 18), cat_color, anchor='mm')
+
+        # 名称（大字，可能换行）
+        name = item["name"]
+        name_y = ty + 60
+        if draw_text_w(draw, name, load_font(SERIF, 36)) > desc_max_w:
+            # 拆分名称（按中文常见分隔符）
+            # 如果太长则省略
+            if len(name) > 12:
+                name = name[:11] + "…"
+        draw_text(draw, (tx, name_y), name, load_font(SERIF, 36), INK)
+
+        # 描述（多行）
+        desc_lines = wrap_text(item["desc"], load_font(SANS, 22), desc_max_w)
+        desc_y = name_y + 70
+        max_desc_lines = 4  # 最多 4 行
+        if len(desc_lines) > max_desc_lines:
+            desc_lines = desc_lines[:max_desc_lines]
+            desc_lines[-1] = desc_lines[-1][:-1] + "…" if len(desc_lines[-1]) > 1 else desc_lines[-1]
+        for i, line in enumerate(desc_lines[:max_desc_lines]):
+            draw_text(draw, (tx, desc_y + i*40), line, load_font(SANS, 22), MUTED)
+
+        # 价格对比（底部）
+        py = y + card_h - 90
+        if item["price"] == 0:
+            # 免费：仅显示「免费送」
+            draw_text(draw, (tx, py+10), "免费送", load_font(SERIF, 44), FREE)
+            if item.get("original"):
+                draw_text(draw, (x+card_w-40, py+18), f"原价 ¥{item['original']}", load_font(SANS, 18), MUTED, anchor='ra')
+        else:
+            # 原价（灰色 + 删除线）
+            orig_text = f"¥{item['original']}"
+            draw_text(draw, (tx, py+8), orig_text, load_font(SANS, 24), MUTED)
+            ow = draw_text_w(draw, orig_text, load_font(SANS, 24))
+            draw.line([(tx, py+20), (tx+ow, py+20)], fill=MUTED, width=2)
+
+            # 箭头
+            ax = tx + ow + 18
+            draw_text(draw, (ax, py+8), "→", load_font(SANS, 24), MUTED)
+
+            # 现价（陶土橙，大字）
+            nx = ax + 32
+            draw_text(draw, (nx, py+8), f"¥{item['price']}", load_font(SERIF, 44), ACCENT)
+
+            # 折扣标签
+            if item.get("original"):
+                discount = round(item["price"] / item["original"] * 10, 1)
+                dtext = f"{discount} 折"
+                dw = draw_text_w(draw, dtext, load_font(SANS, 17)) + 24
+                dx = x + card_w - 40 - dw
+                rounded_rect(draw, (dx, py+4, dx+dw, py+40), 14, fill=ACCENT_SOFT)
+                draw_text(draw, (dx+dw/2, py+22), dtext, load_font(SANS, 17), ACCENT, anchor='mm')
+
+    # 底部提示
+    if hint:
+        draw_text(draw, (W//2, H-30), hint, load_font(SANS_L, 18), MUTED, anchor='mm')
+
+    canvas.save(os.path.join(OUT_DIR_V2, f"{page_num:02d}_{title}.jpg"), "JPEG", quality=92, optimize=True)
+    print(f"  ✓ {page_num:02d}_{title}.jpg")
+
+def make_cover_v2():
+    canvas = new_canvas()
+    draw = ImageDraw.Draw(canvas)
+    rounded_rect(draw, (60, 110, 230, 150), 20, fill=ACCENT_SOFT)
+    draw_text(draw, (145, 130), "搬家出闲置", load_font(SANS, 22), ACCENT, anchor='mm')
+    draw_text(draw, (60, 240), "24 件自用好物", load_font(SERIF, 92), INK)
+    draw_text(draw, (60, 360), "低价转让 / 免费送", load_font(SERIF, 56), ACCENT)
+    draw_text(draw, (60, 480), "2024.9 后陆续购置 · 使用都不超过 2 年", load_font(SANS, 26), MUTED)
+    draw_text(draw, (60, 525), "正常使用无明显损坏 · 可当面验货", load_font(SANS, 26), MUTED)
+    draw.line([(60, 600), (W-60, 600)], fill=LINE, width=1)
+
+    preview_items = [
+        ("fridge.jpg", "冰箱"),
+        ("mi-washer.jpg", "洗衣机"),
+        ("chair.jpg", "人体工学椅"),
+        ("mi-router.jpg", "路由器"),
+    ]
+    y0 = 660
+    psize = 150
+    gap = 30
+    total_w = 4*psize + 3*gap
+    start_x = (W - total_w) // 2
+    for i, (fn, label) in enumerate(preview_items):
+        x = start_x + i*(psize+gap)
+        try:
+            pimg = fit_image(os.path.join(IMG_DIR, fn), (psize, psize))
+            mask = Image.new('L', pimg.size, 0)
+            mdraw = ImageDraw.Draw(mask)
+            mdraw.rounded_rectangle((0, 0, pimg.size[0], pimg.size[1]), 12, fill=255)
+            canvas.paste(pimg, (x, y0), mask)
+        except:
+            rounded_rect(draw, (x, y0, x+psize, y0+psize), 12, fill=LINE)
+        draw_text(draw, (x+psize//2, y0+psize+22), label, load_font(SANS, 18), MUTED, anchor='mt')
+
+    draw.line([(60, 1020), (W-60, 1020)], fill=LINE, width=1)
+    info = [("自提", "比亚迪东区"), ("时间", "工作日 18:00 后"), ("微信", "RyanGrant"), ("共计", "24 件")]
+    y_info = 1090
+    cell_w = (W - 120) // 4
+    for i, (label, val) in enumerate(info):
+        x = 60 + i*cell_w
+        cx = x + cell_w // 2
+        draw.ellipse((cx-4, y_info-4, cx+4, y_info+4), fill=ACCENT)
+        draw_text(draw, (cx, y_info+45), label, load_font(SANS, 18), MUTED, anchor='mm')
+        draw_text(draw, (cx, y_info+90), val, load_font(SANS, 24), INK, anchor='mm')
+
+    canvas.save(os.path.join(OUT_DIR_V2, "01_cover.jpg"), "JPEG", quality=92, optimize=True)
+    print("  ✓ 01_cover.jpg")
+
+def make_contact_v2():
+    canvas = new_canvas()
+    draw = ImageDraw.Draw(canvas)
+    draw_text(draw, (60, 110), "想要哪件？", load_font(SERIF, 56), INK)
+    draw_text(draw, (60, 190), "扫码加我微信聊～", load_font(SANS, 24), MUTED)
+    qr_size = 540
+    qr_x = (W - qr_size) // 2
+    qr_y = 260
+    try:
+        qr_img = Image.open(QR_PATH).convert('RGB')
+        qr_img.thumbnail((qr_size, qr_size), Image.LANCZOS)
+        canvas.paste(qr_img, (qr_x + (qr_size-qr_img.size[0])//2,
+                              qr_y + (qr_size-qr_img.size[1])//2))
+    except Exception as e:
+        print(f"  二维码加载失败: {e}")
+        rounded_rect(draw, (qr_x, qr_y, qr_x+qr_size, qr_y+qr_size), 12, fill=LINE)
+    wcid_box_y = qr_y + qr_size + 50
+    rounded_rect(draw, (180, wcid_box_y, W-180, wcid_box_y+80), 16, fill=ACCENT_SOFT)
+    draw_text(draw, (W//2, wcid_box_y+40), "微信号：RyanGrant", load_font(SERIF, 32), ACCENT, anchor='mm')
+    y_info = wcid_box_y + 130
+    info = [("自提地点", "比亚迪东区宿舍"), ("看货时间", "工作日 18:00 后 / 周末全天"), ("免费物品", "4 件 · 先到先得")]
+    for i, (label, val) in enumerate(info):
+        y = y_info + i*48
+        draw.ellipse((200-5, y-5, 200+5, y+5), fill=ACCENT)
+        draw_text(draw, (220, y), label, load_font(SANS, 22), MUTED, anchor='lm')
+        draw_text(draw, (W-200, y), val, load_font(SANS, 22), INK, anchor='rm')
+    canvas.save(os.path.join(OUT_DIR_V2, "15_contact.jpg"), "JPEG", quality=92, optimize=True)
+    print("  ✓ 15_contact.jpg")
 def make_contact():
     canvas = new_canvas()
     draw = ImageDraw.Draw(canvas)
@@ -430,11 +653,49 @@ if __name__ == "__main__":
     make_contact()
 
     # 列出输出
-    print("\n=== 全部生成完毕 ===")
+    print("\n=== V1（列表式 4件/页）生成完毕 ===")
     total_size = 0
     for fn in sorted(os.listdir(OUT_DIR)):
         if fn.endswith('.jpg'):
             sz = os.path.getsize(os.path.join(OUT_DIR, fn)) / 1024
+            total_size += sz
+            print(f"  {fn}  {sz:.0f}KB")
+    print(f"\n共 {total_size/1024:.2f}MB")
+
+    # ============================================================
+    # V2: 横排布局（每页 2 件，左图右描述）
+    # ============================================================
+    print("\n=== V2（横排 2件/页）开始生成 ===")
+    make_cover_v2()
+    make_index()  # 索引页复用 V1
+    import shutil
+    shutil.copy(os.path.join(OUT_DIR, "02_index.jpg"),
+                os.path.join(OUT_DIR_V2, "02_index.jpg"))
+    print("  ✓ 02_index.jpg (复用 V1)")
+
+    # 每页 2 件，12 页明细 + 1 联系方式 = 14 张
+    v2_pages = []
+    for i in range(0, 24, 2):
+        page_num = 3 + i // 2  # 从 3 开始
+        title = ITEMS[i]["category"]
+        if i+1 < len(ITEMS):
+            title2 = ITEMS[i+1]["category"]
+            if title2 != title:
+                title = f"{title} + {title2}"
+        hint = "" if i + 2 >= 24 else "→ 滑动看下一件"
+        v2_pages.append((page_num, title, ITEMS[i:i+2], hint))
+
+    for p in v2_pages:
+        make_item_page_horizontal(*p)
+
+    make_contact_v2()
+
+    # 列出 V2 输出
+    print("\n=== V2 全部生成完毕 ===")
+    total_size = 0
+    for fn in sorted(os.listdir(OUT_DIR_V2)):
+        if fn.endswith('.jpg'):
+            sz = os.path.getsize(os.path.join(OUT_DIR_V2, fn)) / 1024
             total_size += sz
             print(f"  {fn}  {sz:.0f}KB")
     print(f"\n共 {total_size/1024:.2f}MB")
