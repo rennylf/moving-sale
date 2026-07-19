@@ -35,7 +35,7 @@ const ITEMS = [
     images: ["images/jump-rope.jpg"], status: "available" },
   { name: "哑铃", category: "健身", price: 0, condition: "",
     desc: "品健男士家用六角哑铃，包胶，2.5kg。",
-    images: ["images/dumbbell.jpg"], status: "available" },
+    images: ["images/dumbbell.jpg"], status: "sold" },
   { name: "小爱音箱", category: "数码", price: 60, condition: "",
     desc: "小米 小爱音箱 Play 增强版，LED 时钟显示，红外遥控，黑色。",
     images: ["images/xiaomi-speaker.jpg"], status: "sold" },
