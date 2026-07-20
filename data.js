@@ -47,7 +47,7 @@ const ITEMS = [
     images: ["images/mi-router.jpg"], status: "available" },
   { name: "床上小桌板", category: "家具", price: 20, condition: "",
     desc: "可折叠，60×40cm，适合床上学习、追剧、用电脑。",
-    images: ["images/bed-desk.jpg"], status: "available" },
+    images: ["images/bed-desk.jpg"], status: "sold" },
   { name: "排插一组", category: "数码", price: 60, condition: "",
     desc: "8 口 1 个 + 4 口 3 个，一次带走一整套。",
     images: ["images/power-strips.jpg"], status: "sold" },
